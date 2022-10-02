@@ -83,6 +83,7 @@ import { t } from "../i18n";
 import { trackEvent } from "../analytics";
 import { updateStaleImageStatuses } from "./data/FileManager";
 import { useCallbackRefState } from "../hooks/useCallbackRefState";
+import axios from "axios";
 
 polyfill();
 window.EXCALIDRAW_THROTTLE_RENDER = true;
@@ -247,11 +248,102 @@ const PlusAppLinkJSX = (
   </a>
 );
 
-const SubmitAssignmentJSX = (
-  <a href="#" target="_blank" rel="noreferrer" className="plus-button">
-    Nộp bài
-  </a>
-);
+const NavigateAssignmentJSX = ({ hints }: any) => {
+  const navigate = (e: any, url: string) => {
+    e.preventDefault();
+    window.location.href = url;
+    window.location.reload();
+  };
+
+  return (
+    <div>
+      <div
+        style={{
+          margin: "1rem 8px 0.4rem 8px",
+          display: "flex",
+          justifyContent: "space-between",
+        }}
+      >
+        <p
+          style={{
+            color: "#0f1e94",
+            fontSize: "2em",
+            fontWeight: "bold",
+            margin: 0,
+          }}
+        >
+          Câu {hints?.numSlide}
+        </p>
+        {typeof hints?.points !== undefined && (
+          <p
+            style={{
+              color: "#f73481",
+              fontWeight: "bold",
+              fontSize: "1.5em",
+              margin: 0,
+            }}
+          >
+            {hints?.points} điểm
+          </p>
+        )}
+      </div>
+      <div
+        style={{
+          fontSize: "14px",
+          margin: "0 8px 1rem 8px",
+          lineHeight: 1.5,
+        }}
+      >
+        <p>{hints?.name}</p>
+        {hints?.desc && (
+          <i>
+            <b>Gợi ý:</b> {hints.desc}
+          </i>
+        )}
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+        {hints?.prevUrl && (
+          <a
+            href="#"
+            className="plus-button"
+            style={{ fontSize: "0.8rem", flex: 1 }}
+            onClick={(e) => navigate(e, hints.prevUrl as string)}
+          >
+            Quay lại
+          </a>
+        )}
+        {hints?.nextUrl ? (
+          <a
+            href="#"
+            rel="noreferrer"
+            className="plus-button"
+            style={{ fontSize: "0.8rem", flex: 1 }}
+            onClick={(e) => navigate(e, hints.nextUrl as string)}
+          >
+            Tiếp theo
+          </a>
+        ) : (
+          <a
+            href="#"
+            target="_blank"
+            rel="noreferrer"
+            className="plus-button"
+            style={{ fontSize: "0.8rem" }}
+          >
+            Nộp bài
+          </a>
+        )}
+      </div>
+    </div>
+  );
+};
+// const NavigateAssignmentJSX = () => {
+//   return (
+//     <ul className="excalidraw-navigate">
+//       <li className="excalidraw-item">1</li>
+//     </ul>
+//   );
+// };
 
 const ExcalidrawWrapper = () => {
   const [errorMessage, setErrorMessage] = useState("");
@@ -259,7 +351,34 @@ const ExcalidrawWrapper = () => {
   if (Array.isArray(currentLangCode)) {
     currentLangCode = currentLangCode[0];
   }
+  const [hints, setHints] = useState<{
+    _id: string;
+    numSlide: number;
+    name: string;
+    desc?: string;
+    prevUrl?: string | null;
+    nextUrl?: string | null;
+    points?: number;
+  } | null>(null);
   const [langCode, setLangCode] = useState(currentLangCode);
+
+  useEffect(() => {
+    const roomLinkData = getCollaborationLinkData(window.location.href);
+    if (roomLinkData) {
+      const { roomId, sessionId, userId } = roomLinkData;
+      axios({
+        method: "GET",
+        url: "http://localhost:8080/api/v1/hints/",
+        params: {
+          userId,
+          rosterGroupId: sessionId,
+          slideId: roomId,
+        },
+      }).then(({ data }) => {
+        setHints(data.data);
+      });
+    }
+  }, []);
   // initial state
   // ---------------------------------------------------------------------------
 
@@ -593,17 +712,25 @@ const ExcalidrawWrapper = () => {
       return (
         <div
           style={{
-            width: isExcalidrawPlusSignedUser ? "21ch" : "23ch",
+            width: isExcalidrawPlusSignedUser ? "21ch" : "48ch",
             fontSize: "0.7em",
-            textAlign: "center",
+            borderRadius: 4,
+            background: "#fff",
+            border: "1px solid #0f1e94",
           }}
         >
-          {SubmitAssignmentJSX}
-          {/* {isExcalidrawPlusSignedUser ? PlusAppLinkJSX : PlusLPLinkJSX} */}
+          {<NavigateAssignmentJSX hints={hints} />}
+          <a
+            href="#"
+            className="plus-button--danger"
+            style={{ fontSize: "0.8rem" }}
+          >
+            Trợ giúp
+          </a>
         </div>
       );
     },
-    [],
+    [hints],
   );
 
   const renderFooter = useCallback(
@@ -691,60 +818,61 @@ const ExcalidrawWrapper = () => {
   };
 
   return (
-    <div
-      style={{ height: "100%" }}
-      className={clsx("excalidraw-app", {
-        "is-collaborating": isCollaborating,
-      })}
-    >
-      <Excalidraw
-        ref={excalidrawRefCallback}
-        onChange={onChange}
-        initialData={initialStatePromiseRef.current.promise}
-        onCollabButtonClick={() => setCollabDialogShown(true)}
-        isCollaborating={isCollaborating}
-        onPointerUpdate={collabAPI?.onPointerUpdate}
-        UIOptions={{
-          canvasActions: {
-            export: {
-              onExportToBackend,
-              renderCustomUI: (elements, appState, files) => {
-                return (
-                  <ExportToExcalidrawPlus
-                    elements={elements}
-                    appState={appState}
-                    files={files}
-                    onError={(error) => {
-                      excalidrawAPI?.updateScene({
-                        appState: {
-                          errorMessage: error.message,
-                        },
-                      });
-                    }}
-                  />
-                );
+    <>
+      <div
+        style={{ height: "100%" }}
+        className={clsx("excalidraw-app", {
+          "is-collaborating": isCollaborating,
+        })}
+      >
+        <Excalidraw
+          ref={excalidrawRefCallback}
+          onChange={onChange}
+          initialData={initialStatePromiseRef.current.promise}
+          // onCollabButtonClick={() => setCollabDialogShown(true)}
+          isCollaborating={isCollaborating}
+          onPointerUpdate={collabAPI?.onPointerUpdate}
+          UIOptions={{
+            canvasActions: {
+              export: {
+                onExportToBackend,
+                renderCustomUI: (elements, appState, files) => {
+                  return (
+                    <ExportToExcalidrawPlus
+                      elements={elements}
+                      appState={appState}
+                      files={files}
+                      onError={(error) => {
+                        excalidrawAPI?.updateScene({
+                          appState: {
+                            errorMessage: error.message,
+                          },
+                        });
+                      }}
+                    />
+                  );
+                },
               },
             },
-          },
-        }}
-        renderTopRightUI={renderTopRightUI}
-        // renderFooter={renderFooter}
-        // langCode={langCode}
-        langCode="vi-VN"
-        renderCustomStats={renderCustomStats}
-        detectScroll={false}
-        handleKeyboardGlobally={true}
-        onLibraryChange={onLibraryChange}
-        autoFocus={true}
-      />
-      {excalidrawAPI && <Collab excalidrawAPI={excalidrawAPI} />}
-      {errorMessage && (
-        <ErrorDialog
-          message={errorMessage}
-          onClose={() => setErrorMessage("")}
+          }}
+          renderTopRightUI={renderTopRightUI}
+          // renderFooter={renderFooter}
+          langCode={langCode}
+          renderCustomStats={renderCustomStats}
+          detectScroll={false}
+          handleKeyboardGlobally={true}
+          onLibraryChange={onLibraryChange}
+          autoFocus={true}
         />
-      )}
-    </div>
+        {excalidrawAPI && <Collab excalidrawAPI={excalidrawAPI} />}
+        {errorMessage && (
+          <ErrorDialog
+            message={errorMessage}
+            onClose={() => setErrorMessage("")}
+          />
+        )}
+      </div>
+    </>
   );
 };
 

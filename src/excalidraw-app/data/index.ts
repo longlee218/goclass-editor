@@ -134,8 +134,9 @@ export type SocketUpdateData =
     _brand: "socketUpdateData";
   };
 
-const RE_COLLAB_LINK = /^#room=([a-zA-Z0-9_-]+),([a-zA-Z0-9_-]+)$/;
-
+const RE_COLLAB_LINK =
+  /^#room=([a-zA-Z0-9_-]+),([a-zA-Z0-9_-]+),([a-zA-Z0-9_-]+),([a-zA-Z0-9_-]+)$/;
+//slideId,encryptionKey,rosterId,userId
 export const isCollaborationLink = (link: string) => {
   const hash = new URL(link).hash;
   return RE_COLLAB_LINK.test(hash);
@@ -148,7 +149,14 @@ export const getCollaborationLinkData = (link: string) => {
     window.alert(t("alerts.invalidEncryptionKey"));
     return null;
   }
-  return match ? { roomId: match[1], roomKey: match[2] } : null;
+  return match
+    ? {
+        roomId: match[1],
+        roomKey: match[2],
+        sessionId: match[3],
+        userId: match[4],
+      }
+    : null;
 };
 
 export const generateCollaborationLinkData = async () => {

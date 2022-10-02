@@ -29,6 +29,8 @@
     "@types/react": "18.0.15",
     "@types/react-dom": "18.0.6",
     "@types/socket.io-client": "1.4.36",
+    "antd": "4.23.2",
+    "axios": "0.27.2",
     "browser-fs-access": "0.29.1",
     "clsx": "1.1.1",
     "fake-indexeddb": "3.1.7",
