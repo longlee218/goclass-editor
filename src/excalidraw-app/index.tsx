@@ -69,6 +69,7 @@ import { LanguageList } from "./components/LanguageList";
 import { LocalData } from "./data/LocalData";
 import { Tooltip } from "../components/Tooltip";
 import { TopErrorBoundary } from "../components/TopErrorBoundary";
+import axios from "axios";
 import clsx from "clsx";
 import { getDefaultAppState } from "../appState";
 import { isBrowserStorageStateNewer } from "./data/tabSync";
@@ -83,7 +84,6 @@ import { t } from "../i18n";
 import { trackEvent } from "../analytics";
 import { updateStaleImageStatuses } from "./data/FileManager";
 import { useCallbackRefState } from "../hooks/useCallbackRefState";
-import axios from "axios";
 
 polyfill();
 window.EXCALIDRAW_THROTTLE_RENDER = true;
@@ -371,7 +371,7 @@ const ExcalidrawWrapper = () => {
         url: "http://localhost:8080/api/v1/hints/",
         params: {
           userId,
-          rosterGroupId: sessionId,
+          assignWorkId: sessionId,
           slideId: roomId,
         },
       }).then(({ data }) => {
