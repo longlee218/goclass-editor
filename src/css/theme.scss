@@ -41,6 +41,8 @@
   --color-primary-darker: #0f1964;
   --color-primary-darkest: #0c165e;
   --color-primary-light: #e2e1fc;
+  --color-danger: #f73481;
+  --color-danger-darker: #bb2762;
 
   --border-radius-md: 0.375rem;
   --border-radius-lg: 0.5rem;
@@ -83,9 +85,14 @@
     --shadow-island: 1px 1px 5px #{transparentize($oc-black, 0.7)};
     --text-primary-color: #{$oc-gray-4};
 
-    --color-primary: #5650f0;
-    --color-primary-darker: #4b46d8;
-    --color-primary-darkest: #3e39be;
+    // --color-primary: #0f1e94;
+    // --color-primary-darker: #4b46d8;
+    // --color-primary-darkest: #3e39be;
+    // --color-primary-light: #3f3d64;
+
+    --color-primary: #0f1e94;
+    --color-primary-darker: #0f1964;
+    --color-primary-darkest: #0c165e;
     --color-primary-light: #3f3d64;
   }
 }

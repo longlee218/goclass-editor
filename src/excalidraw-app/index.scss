@@ -1,8 +1,8 @@
 .excalidraw {
-  --color-primary-contrast-offset: #625ee0; // to offset Chubb illusion
+  --color-primary-contrast-offset: #0f1e94; // to offset Chubb illusion
 
   &.theme--dark {
-    --color-primary-contrast-offset: #726dff; // to offset Chubb illusion
+    --color-primary-contrast-offset: #0f1e94; // to offset Chubb illusion
   }
   .layer-ui__wrapper__footer-center {
     display: flex;
@@ -44,6 +44,7 @@
   color: var(--color-primary) !important;
   margin: 8px;
   text-decoration: none !important;
+  border-radius: 32px;
 
   &:hover {
     background-color: var(--color-primary);
@@ -52,5 +53,28 @@
 
   &:active {
     background-color: var(--color-primary-darker);
+  }
+}
+
+.plus-button--danger {
+  display: flex;
+  justify-content: center;
+  cursor: pointer;
+  align-items: center;
+  border: 1px solid var(--color-danger);
+  padding: 0.6em 0.7em;
+  border-radius: var(--space-factor);
+  color: var(--color-danger) !important;
+  margin: 8px;
+  text-decoration: none !important;
+  border-radius: 32px;
+
+  &:hover {
+    background-color: var(--color-danger);
+    color: white !important;
+  }
+
+  &:active {
+    background-color: var(--color-danger-darker);
   }
 }
