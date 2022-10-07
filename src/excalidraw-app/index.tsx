@@ -1,7 +1,10 @@
 import "./index.scss";
 
 import {
+  API_ASSIGN_WORK_FINISH,
+  API_LOAD_HINTS,
   APP_NAME,
+  CLIENT_STUDENT,
   COOKIES,
   EVENT,
   TITLE_TIMEOUT,
@@ -35,6 +38,13 @@ import {
   STORAGE_KEYS,
   SYNC_BROWSER_TABS_TIMEOUT,
 } from "./app_constants";
+import {
+  MouseEventHandler,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { Provider, useAtom } from "jotai";
 import {
   ResolvablePromise,
@@ -59,15 +69,12 @@ import {
 } from "./data/localStorage";
 import { jotaiStore, useAtomWithInitialValue } from "../jotai";
 import { parseLibraryTokensFromUrl, useHandleLibrary } from "../data/library";
-import { useCallback, useEffect, useRef, useState } from "react";
 
 import CustomStats from "./CustomStats";
 import { ErrorDialog } from "../components/ErrorDialog";
 import { ExportToExcalidrawPlus } from "./components/ExportToExcalidrawPlus";
 import LanguageDetector from "i18next-browser-languagedetector";
-import { LanguageList } from "./components/LanguageList";
 import { LocalData } from "./data/LocalData";
-import { Tooltip } from "../components/Tooltip";
 import { TopErrorBoundary } from "../components/TopErrorBoundary";
 import axios from "axios";
 import clsx from "clsx";
@@ -87,6 +94,17 @@ import { useCallbackRefState } from "../hooks/useCallbackRefState";
 
 polyfill();
 window.EXCALIDRAW_THROTTLE_RENDER = true;
+
+interface IHint {
+  _id: string;
+  numSlide: number;
+  isSupport: boolean;
+  name: string;
+  desc?: string;
+  prevUrl?: string | null;
+  nextUrl?: string | null;
+  points?: number;
+}
 
 const isExcalidrawPlusSignedUser = document.cookie.includes(
   COOKIES.AUTH_STATE_COOKIE,
@@ -248,93 +266,120 @@ const PlusAppLinkJSX = (
   </a>
 );
 
-const NavigateAssignmentJSX = ({ hints }: any) => {
+const NavigateAssignmentJSX = ({
+  hints,
+  onClickSubmit,
+}: {
+  hints: IHint | null;
+  onClickSubmit: MouseEventHandler<any>;
+}) => {
   const navigate = (e: any, url: string) => {
     e.preventDefault();
     window.location.href = url;
     window.location.reload();
   };
-
   return (
-    <div>
-      <div
-        style={{
-          margin: "1rem 8px 0.4rem 8px",
-          display: "flex",
-          justifyContent: "space-between",
-        }}
-      >
-        <p
+    <>
+      {hints && (
+        <div
           style={{
-            color: "#0f1e94",
-            fontSize: "2em",
-            fontWeight: "bold",
-            margin: 0,
+            width: isExcalidrawPlusSignedUser ? "21ch" : "48ch",
+            fontSize: "0.7em",
+            borderRadius: 4,
+            background: "#fff",
+            border: "1px solid #0f1e94",
           }}
         >
-          Câu {hints?.numSlide}
-        </p>
-        {typeof hints?.points !== undefined && (
-          <p
+          <div
             style={{
-              color: "#f73481",
-              fontWeight: "bold",
-              fontSize: "1.5em",
-              margin: 0,
+              margin: "1rem 8px 0.4rem 8px",
+              display: "flex",
+              justifyContent: "space-between",
             }}
           >
-            {hints?.points} điểm
-          </p>
-        )}
-      </div>
-      <div
-        style={{
-          fontSize: "14px",
-          margin: "0 8px 1rem 8px",
-          lineHeight: 1.5,
-        }}
-      >
-        <p>{hints?.name}</p>
-        {hints?.desc && (
-          <i>
-            <b>Gợi ý:</b> {hints.desc}
-          </i>
-        )}
-      </div>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-        {hints?.prevUrl && (
-          <a
-            href="#"
-            className="plus-button"
-            style={{ fontSize: "0.8rem", flex: 1 }}
-            onClick={(e) => navigate(e, hints.prevUrl as string)}
+            <p
+              style={{
+                color: "#0f1e94",
+                fontSize: "2em",
+                fontWeight: "bold",
+                margin: 0,
+              }}
+            >
+              Câu {hints.numSlide}
+            </p>
+            {typeof hints.points !== undefined && (
+              <p
+                style={{
+                  color: "#f73481",
+                  fontWeight: "bold",
+                  fontSize: "1.5em",
+                  margin: 0,
+                }}
+              >
+                {hints.points} điểm
+              </p>
+            )}
+          </div>
+          <div
+            style={{
+              fontSize: "14px",
+              margin: "0 8px 1rem 8px",
+              lineHeight: 1.5,
+            }}
           >
-            Quay lại
-          </a>
-        )}
-        {hints?.nextUrl ? (
+            <p>{hints.name}</p>
+            {hints?.desc && (
+              <i>
+                <b>Gợi ý:</b> {hints.desc}
+              </i>
+            )}
+          </div>
+          <div
+            style={{ display: "flex", justifyContent: "space-between", gap: 8 }}
+          >
+            {hints.prevUrl && (
+              <a
+                href="#"
+                className="plus-button"
+                style={{ fontSize: "0.8rem", flex: 1 }}
+                onClick={(e) => navigate(e, hints.prevUrl as string)}
+              >
+                Quay lại
+              </a>
+            )}
+            {hints.nextUrl && (
+              <a
+                href="#"
+                rel="noreferrer"
+                className="plus-button"
+                style={{ fontSize: "0.8rem", flex: 1 }}
+                onClick={(e) => navigate(e, hints.nextUrl as string)}
+              >
+                Tiếp theo
+              </a>
+            )}
+          </div>
           <a
             href="#"
             rel="noreferrer"
             className="plus-button"
             style={{ fontSize: "0.8rem", flex: 1 }}
-            onClick={(e) => navigate(e, hints.nextUrl as string)}
-          >
-            Tiếp theo
-          </a>
-        ) : (
-          <a
-            href="#"
-            target="_blank"
-            rel="noreferrer"
-            className="plus-button"
-            style={{ fontSize: "0.8rem" }}
+            onClick={onClickSubmit}
           >
             Nộp bài
           </a>
-        )}
-      </div>
-    </div>
+          {hints.isSupport && (
+            <a
+              href="#"
+              className="plus-button--danger"
+              style={{ fontSize: "0.8rem", flex: 1 }}
+            >
+              Trợ giúp
+            </a>
+          )}
+        </div>
+      )}
+    </>
   );
 };
 // const NavigateAssignmentJSX = () => {
@@ -351,16 +396,35 @@ const ExcalidrawWrapper = () => {
   if (Array.isArray(currentLangCode)) {
     currentLangCode = currentLangCode[0];
   }
-  const [hints, setHints] = useState<{
-    _id: string;
-    numSlide: number;
-    name: string;
-    desc?: string;
-    prevUrl?: string | null;
-    nextUrl?: string | null;
-    points?: number;
-  } | null>(null);
+  const [hints, setHints] = useState<IHint | null>(null);
   const [langCode, setLangCode] = useState(currentLangCode);
+
+  const onClickSubmit = useCallback(
+    (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+      e.preventDefault();
+      const roomLinkData = getCollaborationLinkData(window.location.href);
+      if (roomLinkData) {
+        const { sessionId, userId } = roomLinkData;
+        if (window.confirm(t("alerts.submitAssignment"))) {
+          axios({
+            method: "POST",
+            url: API_ASSIGN_WORK_FINISH,
+            data: {
+              assignWorkId: sessionId,
+              userId,
+            },
+          })
+            .then(({ data }) => {
+              window.location.href = CLIENT_STUDENT;
+            })
+            .catch((error) => {
+              window.location.href = CLIENT_STUDENT;
+            });
+        }
+      }
+    },
+    [window.location.href],
+  );
 
   useEffect(() => {
     const roomLinkData = getCollaborationLinkData(window.location.href);
@@ -368,7 +432,7 @@ const ExcalidrawWrapper = () => {
       const { roomId, sessionId, userId } = roomLinkData;
       axios({
         method: "GET",
-        url: "http://localhost:8080/api/v1/hints/",
+        url: API_LOAD_HINTS,
         params: {
           userId,
           assignWorkId: sessionId,
@@ -606,7 +670,7 @@ const ExcalidrawWrapper = () => {
       );
       clearTimeout(titleTimeout);
     };
-  }, [collabAPI, excalidrawAPI]);
+  }, [collabAPI, excalidrawAPI, window.location.href]);
 
   useEffect(() => {
     const unloadHandler = (event: BeforeUnloadEvent) => {
@@ -710,94 +774,10 @@ const ExcalidrawWrapper = () => {
       }
 
       return (
-        <div
-          style={{
-            width: isExcalidrawPlusSignedUser ? "21ch" : "48ch",
-            fontSize: "0.7em",
-            borderRadius: 4,
-            background: "#fff",
-            border: "1px solid #0f1e94",
-          }}
-        >
-          {<NavigateAssignmentJSX hints={hints} />}
-          <a
-            href="#"
-            className="plus-button--danger"
-            style={{ fontSize: "0.8rem" }}
-          >
-            Trợ giúp
-          </a>
-        </div>
+        <NavigateAssignmentJSX hints={hints} onClickSubmit={onClickSubmit} />
       );
     },
     [hints],
-  );
-
-  const renderFooter = useCallback(
-    (isMobile: boolean) => {
-      const renderEncryptedIcon = () => (
-        <a
-          className="encrypted-icon tooltip"
-          href="https://blog.excalidraw.com/end-to-end-encryption/"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={t("encrypted.link")}
-        >
-          <Tooltip label={t("encrypted.tooltip")} long={true}>
-            {shield}
-          </Tooltip>
-        </a>
-      );
-
-      const renderLanguageList = () => (
-        <LanguageList
-          onChange={(langCode) => setLangCode(langCode)}
-          languages={languages}
-          currentLangCode={langCode}
-        />
-      );
-      if (isMobile) {
-        const isTinyDevice = window.innerWidth < 362;
-        return (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: isTinyDevice ? "column" : "row",
-            }}
-          >
-            <fieldset>
-              <legend>{t("labels.language")}</legend>
-              {renderLanguageList()}
-            </fieldset>
-            {/* FIXME remove after 2021-05-20 */}
-            <div
-              style={{
-                width: "24ch",
-                fontSize: "0.7em",
-                textAlign: "center",
-                marginTop: isTinyDevice ? 16 : undefined,
-                marginLeft: "auto",
-                marginRight: isTinyDevice ? "auto" : undefined,
-                padding: isExcalidrawPlusSignedUser ? undefined : "4px 2px",
-                border: isExcalidrawPlusSignedUser
-                  ? undefined
-                  : "1px dashed #aaa",
-                borderRadius: 12,
-              }}
-            >
-              {isExcalidrawPlusSignedUser ? PlusAppLinkJSX : PlusLPLinkJSX}
-            </div>
-          </div>
-        );
-      }
-      return (
-        <>
-          {renderEncryptedIcon()}
-          {renderLanguageList()}
-        </>
-      );
-    },
-    [langCode],
   );
 
   const renderCustomStats = () => {

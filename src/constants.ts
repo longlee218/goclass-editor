@@ -206,3 +206,8 @@ export const ELEMENT_READY_TO_ERASE_OPACITY = 20;
 export const COOKIES = {
   AUTH_STATE_COOKIE: "excplus-auth",
 } as const;
+
+export const API_LOAD_HINTS = "http://localhost:8080/api/v1/hints";
+export const API_ASSIGN_WORK_FINISH =
+  "http://localhost:8080/api/v1/assignment-work/finish";
+export const CLIENT_STUDENT = "http://localhost:3001/student/assignments";
