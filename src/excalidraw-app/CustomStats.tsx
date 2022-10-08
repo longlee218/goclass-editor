@@ -1,12 +1,13 @@
-import { useEffect, useState } from "react";
 import { debounce, getVersion, nFormatter } from "../utils";
 import {
   getElementsStorageSize,
   getTotalStorageSize,
 } from "./data/localStorage";
+import { useEffect, useState } from "react";
+
 import { DEFAULT_VERSION } from "../constants";
-import { t } from "../i18n";
 import { copyTextToSystemClipboard } from "../clipboard";
+import { t } from "../i18n";
 type StorageSizes = { scene: number; total: number };
 
 const STORAGE_SIZE_TIMEOUT = 500;

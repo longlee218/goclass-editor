@@ -211,3 +211,4 @@ export const API_LOAD_HINTS = "http://localhost:8080/api/v1/hints";
 export const API_ASSIGN_WORK_FINISH =
   "http://localhost:8080/api/v1/assignment-work/finish";
 export const CLIENT_STUDENT = "http://localhost:3001/student/assignments";
+export const SOCKET_URL = "http://localhost:8080/slide";

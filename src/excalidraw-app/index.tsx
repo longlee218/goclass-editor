@@ -7,6 +7,7 @@ import {
   CLIENT_STUDENT,
   COOKIES,
   EVENT,
+  SOCKET_URL,
   TITLE_TIMEOUT,
   VERSION_TIMEOUT,
 } from "../constants";
@@ -23,11 +24,7 @@ import Collab, {
   collabDialogShownAtom,
   isCollaboratingAtom,
 } from "./collab/Collab";
-import {
-  Excalidraw,
-  defaultLang,
-  languages,
-} from "../packages/excalidraw/index";
+import { Excalidraw, defaultLang } from "../packages/excalidraw/index";
 import {
   ExcalidrawElement,
   FileId,
@@ -86,7 +83,7 @@ import { loadFromBlob } from "../data/blob";
 import { newElementWith } from "../element/mutateElement";
 import polyfill from "../polyfill";
 import { reconcileElements } from "./collab/reconciliation";
-import { shield } from "../components/icons";
+import socket from "socket.io-client";
 import { t } from "../i18n";
 import { trackEvent } from "../analytics";
 import { updateStaleImageStatuses } from "./data/FileManager";
@@ -94,6 +91,10 @@ import { useCallbackRefState } from "../hooks/useCallbackRefState";
 
 polyfill();
 window.EXCALIDRAW_THROTTLE_RENDER = true;
+
+const mainBackendSocket = socket(SOCKET_URL, {
+  path: "/socket",
+});
 
 interface IHint {
   _id: string;
@@ -269,9 +270,11 @@ const PlusAppLinkJSX = (
 const NavigateAssignmentJSX = ({
   hints,
   onClickSubmit,
-}: {
+}: // onClickRaiseHand,
+{
   hints: IHint | null;
   onClickSubmit: MouseEventHandler<any>;
+  // onClickRaiseHand: MouseEventHandler<any>;
 }) => {
   const navigate = (e: any, url: string) => {
     e.preventDefault();
@@ -373,6 +376,7 @@ const NavigateAssignmentJSX = ({
               href="#"
               className="plus-button--danger"
               style={{ fontSize: "0.8rem", flex: 1 }}
+              // onClick={onClickRaiseHand}
             >
               Trợ giúp
             </a>
@@ -425,6 +429,29 @@ const ExcalidrawWrapper = () => {
     },
     [window.location.href],
   );
+
+  // const onClickRaiseHand = useCallback(
+  //   (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+  //     e.preventDefault();
+  //     const roomLinkData = getCollaborationLinkData(window.location.href);
+  //     if (roomLinkData) {
+  //       const { roomId, userId } = roomLinkData;
+  //       mainBackendSocket.emit("slideId", roomId, userId);
+  //     }
+  //   },
+  //   [window.location.href],
+  // );
+
+  useEffect(() => {
+    mainBackendSocket.on("connect", () => {
+      console.log("Socket connect");
+    });
+    mainBackendSocket.on("disconnect", () => {});
+    return () => {
+      mainBackendSocket.off("disconnect");
+      mainBackendSocket.off("connect");
+    };
+  }, []);
 
   useEffect(() => {
     const roomLinkData = getCollaborationLinkData(window.location.href);
@@ -774,7 +801,11 @@ const ExcalidrawWrapper = () => {
       }
 
       return (
-        <NavigateAssignmentJSX hints={hints} onClickSubmit={onClickSubmit} />
+        <NavigateAssignmentJSX
+          hints={hints}
+          onClickSubmit={onClickSubmit}
+          // onClickRaiseHand={onClickRaiseHand}
+        />
       );
     },
     [hints],
@@ -809,7 +840,6 @@ const ExcalidrawWrapper = () => {
           ref={excalidrawRefCallback}
           onChange={onChange}
           initialData={initialStatePromiseRef.current.promise}
-          // onCollabButtonClick={() => setCollabDialogShown(true)}
           isCollaborating={isCollaborating}
           onPointerUpdate={collabAPI?.onPointerUpdate}
           UIOptions={{
