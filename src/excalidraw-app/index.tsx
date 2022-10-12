@@ -92,7 +92,7 @@ import { useCallbackRefState } from "../hooks/useCallbackRefState";
 polyfill();
 window.EXCALIDRAW_THROTTLE_RENDER = true;
 
-const mainBackendSocket = io("http://localhost:8080/slide", {
+const mainBackendSocket = io(SOCKET_URL, {
   path: "/socket",
 });
 
