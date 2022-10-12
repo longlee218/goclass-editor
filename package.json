@@ -106,7 +106,7 @@
     "locales-coverage:description": "node scripts/locales-coverage-description.js",
     "prepare": "husky install",
     "prettier": "prettier \"**/*.{css,scss,json,md,html,yml}\" --ignore-path=.eslintignore",
-    "start": "set PORT=3003 && react-scripts start",
+    "start": "set PORT=3000 && react-scripts start",
     "test:all": "yarn test:typecheck && yarn test:code && yarn test:other && yarn test:app --watchAll=false",
     "test:app": "react-scripts test --passWithNoTests",
     "test:code": "eslint --max-warnings=0 --ext .js,.ts,.tsx .",

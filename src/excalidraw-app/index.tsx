@@ -83,7 +83,7 @@ import { loadFromBlob } from "../data/blob";
 import { newElementWith } from "../element/mutateElement";
 import polyfill from "../polyfill";
 import { reconcileElements } from "./collab/reconciliation";
-import socket from "socket.io-client";
+import io from "socket.io-client";
 import { t } from "../i18n";
 import { trackEvent } from "../analytics";
 import { updateStaleImageStatuses } from "./data/FileManager";
@@ -92,7 +92,7 @@ import { useCallbackRefState } from "../hooks/useCallbackRefState";
 polyfill();
 window.EXCALIDRAW_THROTTLE_RENDER = true;
 
-const mainBackendSocket = socket(SOCKET_URL, {
+const mainBackendSocket = io("http://localhost:8080/slide", {
   path: "/socket",
 });
 
@@ -242,40 +242,15 @@ const initializeScene = async (opts: {
   return { scene: null, isExternalScene: false };
 };
 
-const PlusLPLinkJSX = (
-  <p style={{ direction: "ltr", unicodeBidi: "embed" }}>
-    Introducing Excalidraw+
-    <br />
-    <a
-      href="https://plus.excalidraw.com/plus?utm_source=excalidraw&utm_medium=banner&utm_campaign=launch"
-      target="_blank"
-      rel="noreferrer"
-    >
-      Try out now!
-    </a>
-  </p>
-);
-
-const PlusAppLinkJSX = (
-  <a
-    href={`${process.env.REACT_APP_PLUS_APP}/#excalidraw-redirect`}
-    target="_blank"
-    rel="noreferrer"
-    className="plus-button"
-  >
-    Go to Excalidraw+
-  </a>
-);
-
 const NavigateAssignmentJSX = ({
   hints,
+  onClickRaiseHand,
   onClickSubmit,
-}: // onClickRaiseHand,
-{
+}: {
   hints: IHint | null;
   onClickSubmit: MouseEventHandler<any>;
-  // onClickRaiseHand: MouseEventHandler<any>;
-}) => {
+  onClickRaiseHand: MouseEventHandler<any>;
+}): any => {
   const navigate = (e: any, url: string) => {
     e.preventDefault();
     window.location.href = url;
@@ -376,7 +351,7 @@ const NavigateAssignmentJSX = ({
               href="#"
               className="plus-button--danger"
               style={{ fontSize: "0.8rem", flex: 1 }}
-              // onClick={onClickRaiseHand}
+              onClick={onClickRaiseHand}
             >
               Trợ giúp
             </a>
@@ -430,17 +405,17 @@ const ExcalidrawWrapper = () => {
     [window.location.href],
   );
 
-  // const onClickRaiseHand = useCallback(
-  //   (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
-  //     e.preventDefault();
-  //     const roomLinkData = getCollaborationLinkData(window.location.href);
-  //     if (roomLinkData) {
-  //       const { roomId, userId } = roomLinkData;
-  //       mainBackendSocket.emit("slideId", roomId, userId);
-  //     }
-  //   },
-  //   [window.location.href],
-  // );
+  const onClickRaiseHand = useCallback(
+    (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+      e.preventDefault();
+      const roomLinkData = getCollaborationLinkData(window.location.href);
+      if (roomLinkData) {
+        const { roomId, userId, sessionId } = roomLinkData;
+        mainBackendSocket.emit("raiseHand", sessionId, roomId, userId);
+      }
+    },
+    [window.location.href],
+  );
 
   useEffect(() => {
     mainBackendSocket.on("connect", () => {
@@ -804,7 +779,7 @@ const ExcalidrawWrapper = () => {
         <NavigateAssignmentJSX
           hints={hints}
           onClickSubmit={onClickSubmit}
-          // onClickRaiseHand={onClickRaiseHand}
+          onClickRaiseHand={onClickRaiseHand}
         />
       );
     },
