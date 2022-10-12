@@ -1,50 +1,41 @@
-import { ACTIVE_THRESHOLD, IDLE_THRESHOLD } from "../../constants";
+import throttle from "lodash.throttle";
+import { PureComponent } from "react";
+import { ExcalidrawImperativeAPI } from "../../types";
+import { ErrorDialog } from "../../components/ErrorDialog";
 import { APP_NAME, ENV, EVENT } from "../../constants";
+import { ImportedDataState } from "../../data/types";
+import {
+  ExcalidrawElement,
+  InitializedExcalidrawImageElement,
+} from "../../element/types";
+import {
+  getSceneVersion,
+  restoreElements,
+} from "../../packages/excalidraw/index";
+import { Collaborator, Gesture } from "../../types";
+import {
+  preventUnload,
+  resolvablePromise,
+  withBatchedUpdates,
+} from "../../utils";
 import {
   CURSOR_SYNC_TIMEOUT,
   FILE_UPLOAD_MAX_BYTES,
   FIREBASE_STORAGE_PREFIXES,
   INITIAL_SCENE_UPDATE_TIMEOUT,
   LOAD_IMAGES_TIMEOUT,
+  WS_SCENE_EVENT_TYPES,
   STORAGE_KEYS,
   SYNC_FULL_SCENE_INTERVAL_MS,
-  WS_SCENE_EVENT_TYPES,
 } from "../app_constants";
-import { Collaborator, Gesture } from "../../types";
 import {
-  ExcalidrawElement,
-  InitializedExcalidrawImageElement,
-} from "../../element/types";
-import {
-  FileManager,
-  encodeFilesForUpload,
-  updateStaleImageStatuses,
-} from "../data/FileManager";
-import {
-  ReconciledElements,
-  reconcileElements as _reconcileElements,
-} from "./reconciliation";
-import {
+  generateCollaborationLinkData,
+  getCollaborationLink,
+  getCollabServer,
+  getSyncableElements,
   SocketUpdateDataSource,
   SyncableExcalidrawElement,
-  generateCollaborationLinkData,
-  getCollabServer,
-  getCollaborationLink,
-  getSyncableElements,
 } from "../data";
-import { atom, useAtom } from "jotai";
-import {
-  getSceneVersion,
-  restoreElements,
-} from "../../packages/excalidraw/index";
-import {
-  importUsernameFromLocalStorage,
-  saveUsernameToLocalStorage,
-} from "../data/localStorage";
-import {
-  isImageElement,
-  isInitializedImageElement,
-} from "../../element/typeChecks";
 import {
   isSavedToFirebase,
   loadFilesFromFirebase,
@@ -53,26 +44,34 @@ import {
   saveToFirebase,
 } from "../data/firebase";
 import {
-  preventUnload,
-  resolvablePromise,
-  withBatchedUpdates,
-} from "../../utils";
-
-import { AbortError } from "../../errors";
-import { ErrorDialog } from "../../components/ErrorDialog";
-import { ExcalidrawImperativeAPI } from "../../types";
-import { ImportedDataState } from "../../data/types";
-import { LocalData } from "../data/LocalData";
+  importUsernameFromLocalStorage,
+  saveUsernameToLocalStorage,
+} from "../data/localStorage";
 import Portal from "./Portal";
-import { PureComponent } from "react";
 import RoomDialog from "./RoomDialog";
-import { UserIdleState } from "../../types";
-import { decryptData } from "../../data/encryption";
-import { jotaiStore } from "../../jotai";
-import { newElementWith } from "../../element/mutateElement";
-import { resetBrowserStateVersions } from "../data/tabSync";
 import { t } from "../../i18n";
-import throttle from "lodash.throttle";
+import { UserIdleState } from "../../types";
+import { IDLE_THRESHOLD, ACTIVE_THRESHOLD } from "../../constants";
+import {
+  encodeFilesForUpload,
+  FileManager,
+  updateStaleImageStatuses,
+} from "../data/FileManager";
+import { AbortError } from "../../errors";
+import {
+  isImageElement,
+  isInitializedImageElement,
+} from "../../element/typeChecks";
+import { newElementWith } from "../../element/mutateElement";
+import {
+  ReconciledElements,
+  reconcileElements as _reconcileElements,
+} from "./reconciliation";
+import { decryptData } from "../../data/encryption";
+import { resetBrowserStateVersions } from "../data/tabSync";
+import { LocalData } from "../data/LocalData";
+import { atom, useAtom } from "jotai";
+import { jotaiStore } from "../../jotai";
 
 export const collabAPIAtom = atom<CollabAPI | null>(null);
 export const collabDialogShownAtom = atom(false);
@@ -227,7 +226,7 @@ class Collab extends PureComponent<Props, CollabState> {
       preventUnload(event);
     }
 
-    if (this.isCollaborating() || this.portal.roomId) {
+    if (this.isCollaborating || this.portal.roomId) {
       try {
         localStorage?.setItem(
           STORAGE_KEYS.LOCAL_STORAGE_KEY_COLLAB_FORCE_FLAG,
